@@ -1,0 +1,62 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET    -1 // Use default reset pin for SSD1306
+#define OLED_I2C_ADDRESS 0x3C  // I2C address for the OLED display
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// Pin for sound sensor
+int soundSensorPin = A0;
+
+// Array to hold wave data for drawing
+int waveform[SCREEN_WIDTH];
+
+void setup() {
+  // Initialize the display
+  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+
+  // Set up display parameters
+  display.clearDisplay();
+  display.display();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.print("Sound Waveform:");
+  display.display();
+}
+
+void loop() {
+  // Read the analog value from the sound sensor
+  int soundValue = analogRead(soundSensorPin);
+
+  // Map the sensor value to fit within the display height (0-63)
+  int waveHeight = map(soundValue, 0, 1023, 0, SCREEN_HEIGHT - 1);
+
+  // Shift waveform data left
+  for (int i = 0; i < SCREEN_WIDTH - 1; i++) {
+    waveform[i] = waveform[i + 1];
+  }
+
+  // Add the new wave height to the end of the array
+  waveform[SCREEN_WIDTH - 1] = waveHeight;
+
+  // Clear the display
+  display.clearDisplay();
+
+  // Draw the waveform
+  for (int i = 0; i < SCREEN_WIDTH; i++) {
+    display.drawPixel(i, SCREEN_HEIGHT - waveform[i], SSD1306_WHITE);
+  }
+
+  // Update the display with the new waveform
+  display.display();
+
+  delay(50);  // Short delay for smoother animation
+}
